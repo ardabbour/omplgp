@@ -48,7 +48,7 @@ int main() {
   omplgp::Point2D my_goal(4.5, 4.5);
 
   // Create the planner
-  omplgp::Planner2D my_rrt(my_algo, my_cmap, my_ocost, my_tout);
+  omplgp::OMPL2DPlanner my_rrt(my_algo, my_cmap, my_ocost, my_tout);
 
   // Find a plan!
   omplgp::Plan2D my_plan;

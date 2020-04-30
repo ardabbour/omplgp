@@ -92,7 +92,7 @@ using Plan2D = std::vector<Point2D>;
 /**
  * @brief the main planner class
  */
-class Planner2D {
+class OMPL2DPlanner {
 public:
   /**
    * @brief constructor to create a global planner
@@ -101,9 +101,9 @@ public:
    * @param obstacle_cost the minimum cost of an obstacle
    * @param timeout the maximum amount of time the planner will run for
    */
-  Planner2D(const Algorithm algorithm = Algorithm::AUTO,
-            const CostMap2D costmap = CostMap2D(),
-            const double obstacle_cost = 0.5, double timeout = 1.0);
+  OMPL2DPlanner(const Algorithm algorithm = Algorithm::AUTO,
+                const CostMap2D costmap = CostMap2D(),
+                const double obstacle_cost = 0.5, const double timeout = 1.0);
 
   /**
    * @brief gets the algorithm
@@ -161,7 +161,7 @@ public:
    */
   const bool plan(const Point2D &start, const Point2D &goal, Plan2D &plan);
 
-private:
+protected:
   /**
    * @brief the timeout of the planner
    */

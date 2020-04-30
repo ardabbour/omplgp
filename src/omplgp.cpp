@@ -14,8 +14,8 @@ Point2D::Point2D(const double x_coordinate, const double y_coordinate) {
   y = y_coordinate;
 }
 
-Planner2D::Planner2D(const Algorithm algorithm, const CostMap2D costmap,
-                     const double obstacle_cost, double timeout)
+OMPL2DPlanner::OMPL2DPlanner(const Algorithm algorithm, const CostMap2D costmap,
+                             const double obstacle_cost, double timeout)
     : costmap_(costmap), obstacle_cost_(obstacle_cost), timeout_(timeout),
       space_(std::make_shared<ob::RealVectorStateSpace>()) {
   space_->addDimension();
@@ -30,8 +30,8 @@ Planner2D::Planner2D(const Algorithm algorithm, const CostMap2D costmap,
   setAlgorithm(algorithm);
 }
 
-const Algorithm Planner2D::getAlgorithm() { return algorithm_; }
-void Planner2D::setAlgorithm(const Algorithm algorithm) {
+const Algorithm OMPL2DPlanner::getAlgorithm() { return algorithm_; }
+void OMPL2DPlanner::setAlgorithm(const Algorithm algorithm) {
   switch (algorithm) {
 
   case AUTO:
@@ -90,22 +90,22 @@ void Planner2D::setAlgorithm(const Algorithm algorithm) {
   algorithm_ = algorithm;
 }
 
-const double Planner2D::getTimeout() { return timeout_; }
-void Planner2D::setTimeout(const double timeout) { timeout_ = timeout; }
+const double OMPL2DPlanner::getTimeout() { return timeout_; }
+void OMPL2DPlanner::setTimeout(const double timeout) { timeout_ = timeout; }
 
-const CostMap2D Planner2D::getCostMap() { return costmap_; }
-void Planner2D::setCostMap(const CostMap2D &costmap) {
+const CostMap2D OMPL2DPlanner::getCostMap() { return costmap_; }
+void OMPL2DPlanner::setCostMap(const CostMap2D &costmap) {
   costmap_ = costmap;
   setSpaceBounds();
 }
 
-const double Planner2D::getObstacleCost() { return obstacle_cost_; }
-void Planner2D::setObtacleCost(const double &obstacle_cost) {
+const double OMPL2DPlanner::getObstacleCost() { return obstacle_cost_; }
+void OMPL2DPlanner::setObtacleCost(const double &obstacle_cost) {
   obstacle_cost_ = obstacle_cost;
 }
 
-const bool Planner2D::plan(const Point2D &start, const Point2D &goal,
-                           Plan2D &plan) {
+const bool OMPL2DPlanner::plan(const Point2D &start, const Point2D &goal,
+                               Plan2D &plan) {
   if (!ss_) {
     std::cerr << "No solution found" << std::endl;
     return false;
@@ -136,7 +136,7 @@ const bool Planner2D::plan(const Point2D &start, const Point2D &goal,
   return true;
 }
 
-void Planner2D::setSpaceBounds() {
+void OMPL2DPlanner::setSpaceBounds() {
   const double min_x = 0;
   const double max_x = costmap_.size();
   const double min_y = 0;
@@ -150,7 +150,7 @@ void Planner2D::setSpaceBounds() {
   space_->setBounds(bounds);
 }
 
-const bool Planner2D::isStateValid(const ob::State *state) {
+const bool OMPL2DPlanner::isStateValid(const ob::State *state) {
   const int x =
       (int)floor(state->as<ob::RealVectorStateSpace::StateType>()->values[0]);
   const int y =
