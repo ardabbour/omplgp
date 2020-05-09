@@ -8,14 +8,37 @@
 #ifndef OMPLGP_H
 #define OMPLGP_H
 
+/**
+ * Base includes
+ */
+#include <ompl/base/State.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
-#include <ompl/geometric/SimpleSetup.h>
+#include <ompl/base/spaces/SE3StateSpace.h>
 
+/**
+ * Control includes
+ */
+#include <ompl/control/ODESolver.h>
+#include <ompl/control/SimpleSetup.h>
+#include <ompl/control/SpaceInformation.h>
+#include <ompl/control/planners/est/EST.h>
+#include <ompl/control/planners/kpiece/KPIECE1.h>
+#include <ompl/control/planners/pdst/PDST.h>
+#include <ompl/control/planners/rrt/RRT.h>
+#include <ompl/control/planners/sst/SST.h>
+#include <ompl/control/spaces/RealVectorControlSpace.h>
+
+/**
+ * Geometric includes
+ */
+#include <ompl/geometric/SimpleSetup.h>
+#include <ompl/geometric/planners/kpiece/BKPIECE1.h>
+#include <ompl/geometric/planners/kpiece/KPIECE1.h>
+#include <ompl/geometric/planners/kpiece/LBKPIECE1.h>
 #include <ompl/geometric/planners/prm/LazyPRM.h>
 #include <ompl/geometric/planners/prm/LazyPRMstar.h>
 #include <ompl/geometric/planners/prm/PRM.h>
 #include <ompl/geometric/planners/prm/PRMstar.h>
-
 #include <ompl/geometric/planners/rrt/InformedRRTstar.h>
 #include <ompl/geometric/planners/rrt/LazyRRT.h>
 #include <ompl/geometric/planners/rrt/RRT.h>
@@ -23,34 +46,41 @@
 #include <ompl/geometric/planners/rrt/RRTsharp.h>
 #include <ompl/geometric/planners/rrt/RRTstar.h>
 
-#include <ompl/geometric/planners/kpiece/BKPIECE1.h>
-#include <ompl/geometric/planners/kpiece/KPIECE1.h>
-#include <ompl/geometric/planners/kpiece/LBKPIECE1.h>
-
 namespace omplgp {
 
 namespace ob = ompl::base;
+namespace oc = ompl::control;
 namespace og = ompl::geometric;
 
 /**
- * @brief algorithms which can be used to plan in. For reference:
+ * @brief sampling-based algorithms for control problems. For reference:
  * https://ompl.kavrakilab.org/planners.html
  */
-enum Algorithm {
+enum ControlAlgorithm {
   AUTO,
+  EST,
+  KPIECE,
+  PDST,
+  RRT,
+  SST,
+};
 
+/**
+ * @brief sampling-based algorithms for geometric problems. For reference:
+ * https://ompl.kavrakilab.org/planners.html
+ */
+enum GeometricAlgorithm {
+  AUTO,
   PRM,
   PRMstar,
   LazyPRM,
   LazyPRMstar,
-
   RRT,
   RRTConnect,
   RRTstar,
   RRTsharp,
   LazyRRT,
   InformedRRTstar,
-
   KPIECE,
   BKPIECE,
   LBKPIECE
@@ -59,40 +89,84 @@ enum Algorithm {
 /**
  * @brief a point in 2D space
  */
-struct Point2D {
+struct QuadrotorPose {
   /**
-   * @brief constructor to create a point at a custom point in 2D space
-   * @param x the x coordinate of the point
-   * @param y the y coordinate of the point
+   * @brief constructor to create a kinematic state of a quadrotor
+   * @param x the x position of the quadrotor
+   * @param y the y position of the quadrotor
+   * @param z the z position of the quadrotor
+   * @param roll the roll orientation of the quadrotor
+   * @param pitch the pitch orientation of the quadrotor
+   * @param yaw the yaw orientation of the quadrotor
    */
-  Point2D(const double x_coordinate = 0.0, const double y_coordinate = 0.0);
+  QuadrotorPose(const double &x = 0.0, const double &y = 0.0,
+                const double &z = 0.0, const double &roll = 0.0,
+                const double &pitch = 0.0, const double &yaw = 0.0);
 
   /**
-   * @brief the x coordinate of the point
+   * @brief the x position of the quadrotor
    */
   double x;
 
   /**
-   * @brief the y coordinate of the point
+   * @brief the y position of the quadrotor
    */
   double y;
+
+  /**
+   * @brief the z position of the quadrotor
+   */
+  double z;
+
+  /**
+   * @brief the roll orientation of the quadrotor
+   */
+  double roll;
+
+  /**
+   * @brief the pitch orientation of the quadrotor
+   */
+  double pitch;
+
+  /**
+   * @brief the yaw orientation of the quadrotor
+   */
+  double yaw;
 };
 
 /**
- * @brief 2D costmap, where the indices indicate the location and the value
- * indicates the cost
+ * @brief Quadrotor kinematic control space
  */
-using CostMap2D = std::vector<std::vector<double>>;
+class QuadrotorKinematicControlSpace : public oc::RealVectorControlSpace {
+public:
+  explicit QuadrotorKinematicControlSpace(const ob::StateSpacePtr &state_space)
+      : oc::RealVectorControlSpace(state_space, 6) {}
+};
 
 /**
- * @brief a sequence of points in 2D space
+ * @brief Quadrotor dynamic control space
  */
-using Plan2D = std::vector<Point2D>;
+class QuadrotorDynamicControlSpace : public oc::RealVectorControlSpace {
+public:
+  explicit QuadrotorDynamicControlSpace(const ob::StateSpacePtr &state_space)
+      : oc::RealVectorControlSpace(state_space, 6) {}
+};
+
+/**
+ * @brief 3D costmap, where the indices indicate the location and the value
+ * indicates the cost
+ */
+using CostMap3D = std::vector<std::vector<std::vector<double>>>;
+
+/**
+ * @brief a sequence of points in 3D space
+ */
+using Plan3D = std::vector<QuadrotorPose>;
 
 /**
  * @brief the main planner class
  */
-class OMPL2DPlanner {
+template <typename T> class OMPL3DPlanner {
 public:
   /**
    * @brief constructor to create a global planner
@@ -101,20 +175,20 @@ public:
    * @param obstacle_cost the minimum cost of an obstacle
    * @param timeout the maximum amount of time the planner will run for
    */
-  OMPL2DPlanner(const Algorithm algorithm = Algorithm::AUTO,
-                const CostMap2D costmap = CostMap2D(),
-                const double obstacle_cost = 0.5, const double timeout = 1.0);
+  OMPL3DPlanner(const T &algorithm = T::AUTO,
+                const CostMap3D &costmap = CostMap3D(),
+                const double &obstacle_cost = 0.5, const double &timeout = 1.0);
 
   /**
    * @brief gets the algorithm
    */
-  const Algorithm getAlgorithm();
+  const T getAlgorithm();
 
   /**
    * @brief sets the algorithm
    * @param algorithm the algorithm to set
    */
-  void setAlgorithm(const Algorithm algorithm);
+  void setAlgorithm(const T &algorithm);
 
   /**
    * @brief gets the timeout
@@ -126,19 +200,19 @@ public:
    * @brief sets the timeout
    * @param timeout the timeout to set
    */
-  void setTimeout(const double timeout);
+  void setTimeout(const double &timeout);
 
   /**
    * @brief gets the costmap
    * @returns the costmap
    */
-  const CostMap2D getCostMap();
+  const CostMap3D getCostMap();
 
   /**
    * @brief sets the costmap
    * @param costmap the costmap to set
    */
-  void setCostMap(const CostMap2D &costmap);
+  void setCostMap(const CostMap3D &costmap);
 
   /**
    * @brief gets the obstacle cost
@@ -159,7 +233,8 @@ public:
    * @param plan the empty vector to fill the plan in
    * @returns if the planning was successful or not
    */
-  const bool plan(const Point2D &start, const Point2D &goal, Plan2D &plan);
+  const bool plan(const QuadrotorPose &start, const QuadrotorPose &goal,
+                  Plan3D &plan);
 
 protected:
   /**
@@ -170,12 +245,12 @@ protected:
   /**
    * @brief the costmap of the planner
    */
-  CostMap2D costmap_;
+  CostMap3D costmap_;
 
   /**
    * @brief the algorithm of the planner
    */
-  Algorithm algorithm_;
+  T algorithm_;
 
   /**
    * @brief the obstacle cost of the planner
